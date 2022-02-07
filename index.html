@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<style>
+canvas {
+    border:1px solid #d3d3d3;
+    background-color: #f1f1f1;
+}
+</style>
+</head>
+<body onload="startGame()">
+<script>
+
+var myGamePiece;
+var myObstacles = [];
+var myScore;
+var gameOver;
+var pontos = 0;
+var myNivel;
+var nivel = 1;
+var contador = 0;
+var quadradosPassados = 0;
+var velocity = -3;
+var backgroundFinal;
+
+function startGame() {
+    myGamePiece = new component(30, 30, "red", 10, 120);
+    myScore = new component("20px", "Consolas", "black", 370, 20, "text");
+    myGameArea.start();
+    myNivel= new component("20px", "Consolas", "black", 10, 20, "text");
+}
+
+var myGameArea = {
+    canvas : document.createElement("canvas"),
+    start : function() {
+        this.canvas.width = 480;
+        this.canvas.height = 270;
+        this.context = this.canvas.getContext("2d");
+        document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+        this.frameNo = 0;
+        this.interval = setInterval(updateGameArea, 20);
+        window.addEventListener('keydown', function (e) {
+        myGameArea.keys = (myGameArea.keys || []);
+        myGameArea.keys[e.keyCode] = true;
+        })
+        window.addEventListener('keyup', function (e) {
+        myGameArea.keys[e.keyCode] = false;
+        })
+    },
+    
+    clear : function() {
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    },
+    stop : function() {
+        clearInterval(this.interval);
+    }
+}
+
+function everyinterval(n) {
+  if ((myGameArea.frameNo / n) % 1 == 0) {return true;}
+  return false;
+}
+
+function component(width, height, color, x, y, type) {
+    this.contado = false;
+    this.passado = false;
+    this.type = type;
+    this.width = width;
+    this.height = height;
+    this.speedX = 0;
+    this.speedY = 0;
+    this.x = x;
+    this.y = y;    
+    this.update = function() {
+        ctx = myGameArea.context;
+        if (this.type == "text") {
+            ctx.font = this.width + " " + this.height;
+            ctx.fillStyle = color;
+            ctx.fillText(this.text, this.x, this.y);
+        } else {
+            ctx.fillStyle = color;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+        }
+    }
+    this.newPos = function() {
+        this.x += this.speedX;
+        this.y += this.speedY;        
+    }
+    this.crashWith = function(otherobj) {
+    var myleft = this.x;
+    var myright = this.x + (this.width);
+    var mytop = this.y;
+    var mybottom = this.y + (this.height);
+    var otherleft = otherobj.x;
+    var otherright = otherobj.x + (otherobj.width);
+    var othertop = otherobj.y;
+    var otherbottom = otherobj.y + (otherobj.height);
+    var crash = true;
+    if ((mybottom < othertop) ||
+    (mytop > otherbottom) ||
+    (myright < otherleft) ||
+    (myleft > otherright)) {
+      crash = false;
+    }
+    return crash;
+   }
+}
+
+function updateGameArea() {
+    var x, y;
+    //if (myObstacles.length > 100) {
+    //    myObstacles.length = 100;
+    //}
+    for (i = 0; i < myObstacles.length; i += 1) {
+        if (myGamePiece.x > myObstacles[i].x + 60 && myObstacles[i].passado == false){
+            quadradosPassados++;
+            myObstacles[i].passado = true;
+            console.log(quadradosPassados);
+
+        }
+        if (myGamePiece.x > myObstacles[i].x + 60 && myObstacles[i].contado == false) {
+        if(nivel == 1){
+            pontos++;
+        }
+        if(nivel > 1){
+            for (j = 0; j < myObstacles.length; j += 1) {
+    	        if(myObstacles[i].x == myObstacles[j].x)
+                {
+                    myObstacles[j].contado = true;
+                }
+  	        }
+            pontos++;                   
+        }
+        myObstacles[i].contado = true;
+    }
+    	if (myGamePiece.crashWith(myObstacles[i] )) {
+        if(pontos >= 0 ){
+            if(myObstacles[i].contado == false){
+                pontos--;
+            }
+            myObstacles[i].contado = true;
+            for (j = 0; j < myObstacles.length; j += 1) {
+    	        if(myObstacles[i].x == myObstacles[j].x)
+                {
+                    myObstacles[j].contado = true;
+                }
+  	        }            
+        } else{
+            pontos = 0;
+            myScore.text = "SCORE: " + pontos;
+            myScore.update();
+            gameOver = new component("50px", "Consolas", "black", 120, 135, "text");
+            gameOver.text = "GAME OVER";
+            gameOver.update();
+      	    myGameArea.stop();
+      	    return;
+        }
+     }
+    }
+    myGameArea.clear();
+    myGameArea.frameNo += 1;
+    if (myGameArea.frameNo == 1 || everyinterval(50)) {
+        if(nivel == 1){
+    	    x = myGameArea.canvas.width;
+            y = myGameArea.canvas.height;
+    	    minHeight = 30;
+    	    maxHeight = 270;
+            if(contador < 100){
+                height = Math.floor(Math.random()*(maxHeight-minHeight+1)+minHeight);
+    	        myObstacles.push(new component(60, 60, "blue", x, y- height));
+                contador++;
+            }
+            
+            if(quadradosPassados >= 100){
+                nivel = 2;
+                contador = 0;
+                quadradosPassados = 0;
+            }
+        }
+        else if(nivel == 2){
+            x = myGameArea.canvas.width;
+            y = myGameArea.canvas.height;
+    	    minHeight = 195;
+    	    maxHeight = 270;
+            if(contador < 100){
+                height = Math.floor(Math.random()*(maxHeight-minHeight+1)+minHeight);
+    	        myObstacles.push(new component(60, 60, "blue", x, y- height));
+                minGap = 100;
+                maxGap = 230;
+                gap = Math.floor(Math.random()*(maxGap-minGap+1)+minGap);
+                myObstacles.push(new component(60, 60, "blue", x, y - height + gap));
+                contador++
+            }
+            if(quadradosPassados >= 200){
+                nivel = 3;
+                contador = 0;
+                velocity = -5
+                quadradosPassados = 0;
+            }
+        }
+        else if(nivel == 3){
+            x = myGameArea.canvas.width;
+            y = myGameArea.canvas.height;
+    	    minHeight = 195;
+    	    maxHeight = 270;
+            if(contador < 100){
+                height = Math.floor(Math.random()*(maxHeight-minHeight+1)+minHeight);
+    	        myObstacles.push(new component(60, 60, "blue", x, y- height));
+                minGap = 60;
+                maxGap = 150;
+                gap = Math.floor(Math.random()*(maxGap-minGap+1)+minGap);
+                myObstacles.push(new component(60, 60, "blue", x, y - height + gap));
+                contador++;
+            }
+            if(quadradosPassados >= 200){
+                nivel = 4;
+                contador = 0;
+            }
+        }
+        else if(nivel == 4){
+            pontos = pontos;
+            backgroundFinal = new component(480, 270, "grey", 0, 0);
+            gameOver = new component("50px", "Consolas", "black", 85, 135, "text");
+            gameOver.text = "FIM DE JOGO";
+            myScore.x = 150;
+            myScore.y = 160;
+            myScore.text = "SCORE: " + pontos;
+            myScore.update();
+            gameOver.update();
+            myGameArea.stop();
+      	    return;
+        }
+  	}
+  	for (i = 0; i < myObstacles.length; i += 1) {
+    	myObstacles[i].x += velocity;
+    	myObstacles[i].update();
+  	}
+    
+    myGamePiece.speedX = 0;
+  	myGamePiece.speedY = 0;
+  	if (myGameArea.keys && myGamePiece.x > 0 &&(myGameArea.keys[37] || myGameArea.keys[65])) {myGamePiece.speedX = -3; }
+  	if (myGameArea.keys && myGamePiece.x < myGameArea.canvas.width-30 &&(myGameArea.keys[39] || myGameArea.keys[68])) {myGamePiece.speedX = 3; }
+  	if (myGameArea.keys && myGamePiece.y > 0 &&(myGameArea.keys[38] || myGameArea.keys[87])) {myGamePiece.speedY = -3; }
+  	if (myGameArea.keys && myGamePiece.y < myGameArea.canvas.height-30 &&(myGameArea.keys[40] || myGameArea.keys[83])) {myGamePiece.speedY = 3; }
+    if(pontos >= 0){
+        myScore.text = "SCORE: " + pontos;
+        myScore.update();
+    }
+    if(nivel <= 3){
+        myNivel.text = "NIVEL: " + nivel;
+        myNivel.update();
+    }
+    myGamePiece.newPos();    
+    myGamePiece.update();
+    
+}
+
+function moveup() {
+    myGamePiece.speedY = -1; 
+}
+
+function movedown() {
+    myGamePiece.speedY = 1; 
+}
+
+function moveleft() {
+    myGamePiece.speedX = -1; 
+}
+
+function moveright() {
+    myGamePiece.speedX = 1; 
+}
+
+function clearmove() {
+    myGamePiece.speedX = 0; 
+    myGamePiece.speedY = 0; 
+}
+</script>
+<p>Faça com que o quadrado vermelho evite os quadrados Azuis para progredir no jogo!</p>
+<p>Teclas para mover o quadrado vermelho:</p>
+<p>W: mover para CIMA</p>
+<p>A: mover para ESQUERDA</p>
+<p>S: mover para BAIXO</p>
+<p>D: mover para DIREITA</p>
+</body>
+</html>
